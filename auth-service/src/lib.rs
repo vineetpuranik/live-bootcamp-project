@@ -1,6 +1,10 @@
-use axum::{serve::Serve, Router};
+use axum::{routing::post, serve::Serve, Router};
 use std::error::Error;
 use tower_http::services::ServeDir;
+
+pub mod routes;
+
+use crate::routes::*;
 
 //This struct encapsulates our application related logic
 pub struct Application {
@@ -13,7 +17,13 @@ pub struct Application {
 impl Application {
     pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
         // Move the Router definition from main.rs here
-        let router = Router::new().nest_service("/", ServeDir::new("assets"));
+        let router = Router::new()
+            .nest_service("/", ServeDir::new("assets"))
+            .route("/signup", post(signup))
+            .route("/login", post(login))
+            .route("/logout", post(logout))
+            .route("/verify-2fa", post(verify_2fa))
+            .route("/verify-token", post(verify_token));
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
