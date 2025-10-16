@@ -55,10 +55,10 @@ pub mod app_state {
     use std::sync::Arc;
     use tokio::sync::RwLock;
 
-    use crate::services::HashMapUserStore;
+    use crate::domain::UserStore;
 
-    // we will use a type alias for representing Arc<RwLock<HashmapUserStore>>
-    // Wrapping HashMapUserStore in an Arc allows shared ownership of HashMapUserStore across threads.
+    // we will use a type alias for representing Arc<RwLock<Box<dyn UserStore>>>
+    // Wrapping the user store in an Arc allows shared ownership of the underlying store across threads.
     // Calling clone on an Arc produces a new Arc instance which points to the same allocation on the heap as source Arc.
     // Instead of copying the reference data, the reference count is incremented.
 
@@ -67,9 +67,9 @@ pub mod app_state {
     // However, route handlers need mutable access to user store to add / remove users from user store.
     // To achieve this we need a synchronization primitive and we will be using the RwLock provided by tokio.
 
-    // In Summary, by wrapping HashMapUserStore in tokio's RwLock smart pointer, the user store can ve safely mutated across threads.
-    // By wrapping RwLock<HashMapUserStore> in an Arc smart pointer, the underlying data can be shared across threads while maintaining a single source of truth.
-    pub type UserStoreType = Arc<RwLock<HashMapUserStore>>;
+    // In Summary, by wrapping the user store in tokio's RwLock smart pointer, the user store can be safely mutated across threads.
+    // By wrapping RwLock<Box<dyn UserStore>> in an Arc smart pointer, the underlying data can be shared across threads while maintaining a single source of truth.
+    pub type UserStoreType = Arc<RwLock<Box<dyn UserStore + Send + Sync>>>;
 
     #[derive(Clone)]
     // AppState derives the Clone trait

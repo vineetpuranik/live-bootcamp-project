@@ -1,4 +1,6 @@
-use auth_service::{app_state::AppState, services::HashMapUserStore, Application};
+use auth_service::{
+    app_state::AppState, domain::UserStore, services::HashMapUserStore, Application,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -11,12 +13,10 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let user_store = HashMapUserStore {
+        let user_store: Box<dyn UserStore + Send + Sync> = Box::new(HashMapUserStore {
             users: HashMap::new(),
-        };
-        let app_state = AppState {
-            user_store: Arc::new(RwLock::new(user_store)),
-        };
+        });
+        let app_state = AppState::new(Arc::new(RwLock::new(user_store)));
         let app = Application::build(app_state, "127.0.0.1:0")
             .await
             .expect("Failed to build the app");
