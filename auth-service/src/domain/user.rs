@@ -1,9 +1,8 @@
-use serde::Deserialize;
+use crate::domain::{Email, Password};
 
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct User {
-    pub email: String,
-    pub password: String,
-    #[serde(rename = "requires2FA")]
+    pub email: Email,
+    pub password: Password,
     pub requires_2fa: bool,
 }
