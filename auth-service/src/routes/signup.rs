@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, User, UserStoreError, Email, Password},
+    domain::{AuthAPIError, Email, Password, User, UserStoreError},
 };
 
 // Use axum's state extractor to pass in AppState
@@ -11,9 +11,10 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    
-    let email = Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let password = Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email =
+        Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     // create a new User instance using data int the request
     let new_user = User {
