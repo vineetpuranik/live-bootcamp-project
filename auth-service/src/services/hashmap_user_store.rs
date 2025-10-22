@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::domain::UserStore;
-use crate::domain::{User, UserStoreError, Email, Password};
+use crate::domain::{Email, Password, User, UserStoreError};
 
 // deriving Default trait ensures we can create new instances of HashMapUserStore that contain an empty HashMap
 #[derive(Default)]
@@ -31,7 +31,11 @@ impl UserStore for HashMapUserStore {
         }
     }
 
-    async fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
+    async fn validate_user(
+        &self,
+        email: &Email,
+        password: &Password,
+    ) -> Result<(), UserStoreError> {
         if let Some(user) = self.users.get(email) {
             // check if password matches
             if !(user.password.eq(password)) {
@@ -56,7 +60,7 @@ mod tests {
             users: HashMap::new(),
         });
 
-        // create a user instance to be added to the storeE) 
+        // create a user instance to be added to the storeE)
         let user_to_add = User {
             email: Email::parse("mytestemail@test.com".to_owned()).unwrap(),
             password: Password::parse("Password@12345".to_owned()).unwrap(),
@@ -114,7 +118,7 @@ mod tests {
         };
 
         let test_email: Email = Email::parse("mytestemail@test.com".to_owned()).unwrap();
-        let test_password:Password = Password::parse("Password@12345".to_owned()).unwrap();
+        let test_password: Password = Password::parse("Password@12345".to_owned()).unwrap();
         let test_incorrect_password: Password = Password::parse("wrongpass".to_owned()).unwrap();
 
         // Assert we get UserNotFound if user email is not present in user store map
