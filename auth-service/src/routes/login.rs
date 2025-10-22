@@ -23,7 +23,8 @@ pub async fn login(
 
     match user_store.validate_user(&email, &password).await {
         Ok(()) => {}
-        Err(UserStoreError::InvalidCredentials) => return Err(AuthAPIError::InvalidCredentials),
+        Err(UserStoreError::UserNotFound) => return Err(AuthAPIError::IncorrectCredentials),
+        Err(UserStoreError::InvalidCredentials) => return Err(AuthAPIError::IncorrectCredentials),
         _ => return Err(AuthAPIError::UnexpectedError),
     }
 
