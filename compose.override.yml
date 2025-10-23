@@ -5,5 +5,3 @@ services:
   auth-service:
     build:
       context: ./auth-service # specify directory where local Dockerfile is located
-    env_file:
-    - ./auth-service/.env  
