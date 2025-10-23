@@ -1,18 +1,25 @@
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password, UserStoreError},
+    utils::auth::generate_auth_cookie,
 };
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
 pub async fn login(
     State(state): State<AppState>,
+    jar:CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
-    let email =
-        Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let password =
-        Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    let email = match Email::parse(request.email.clone()) {
+        Ok(e) => e,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
+    let password = match Password::parse(request.password.clone()) {
+        Ok(p) => p,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
     println!("Email is {:?}", email);
     println!("Password is {:?}", password);
@@ -23,15 +30,21 @@ pub async fn login(
 
     match user_store.validate_user(&email, &password).await {
         Ok(()) => {}
-        Err(UserStoreError::UserNotFound) => return Err(AuthAPIError::IncorrectCredentials),
-        Err(UserStoreError::InvalidCredentials) => return Err(AuthAPIError::IncorrectCredentials),
-        _ => return Err(AuthAPIError::UnexpectedError),
+        Err(UserStoreError::UserNotFound) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+        Err(UserStoreError::InvalidCredentials) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+        _ => return (jar, Err(AuthAPIError::UnexpectedError)),
     }
 
-    let response = Json(LoginResponse {
-        message: "Login Successful!".to_string(),
-    });
-    Ok((StatusCode::OK, response))
+    // Call the generate_auth_cookie function defined in the auth module.
+    // If the function call fails return AuthAPIError::UnexpectedError.
+    let auth_cookie = match generate_auth_cookie(&email) {
+        Ok(c) => c,
+        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+    };
+
+    let updated_jar = jar.add(auth_cookie);
+
+    (updated_jar, Ok(StatusCode::OK.into_response()))
 }
 
 #[derive(Deserialize)]
