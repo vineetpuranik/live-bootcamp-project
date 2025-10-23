@@ -15,6 +15,6 @@ services:
     image: coolingbroom593/auth-service
     restart: "always" # automatically restart container when server crashes
     env_file:
-    - ./auth-service/.env
+      - ./auth-service/.env
     ports:
       - "3000:3000" # expose port 3000 so that applications outside the container can connect to it 
