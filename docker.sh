@@ -1,8 +1,10 @@
-=#!/bin/bash
+#!/bin/bash
 set -e
 
-# Define the location of the .env file (change if needed)
-ENV_FILE="./auth-service/.env"
+# Always move to the directory containing this script (project root)
+cd "$(dirname "$0")"
+
+ENV_FILE="./.env"
 
 # Check if the .env file exists
 if [[ ! -f "$ENV_FILE" ]]; then
