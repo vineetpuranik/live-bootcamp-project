@@ -1,6 +1,7 @@
 use auth_service::{
     app_state::AppState, domain::UserStore, services::HashMapUserStore, Application,
 };
+use reqwest::cookie::Jar;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -8,6 +9,7 @@ use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
+    pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
 }
 
@@ -29,12 +31,14 @@ impl TestApp {
         #[allow(clippy::let_underscore_future)]
         let _ = tokio::spawn(app.run());
 
+        let cookie_jar = Arc::new(Jar::default());
         // Create a reqwest http client instance
         let http_client = reqwest::Client::new();
 
         // Create a new TestApp instance and return it
         Self {
             address,
+            cookie_jar,
             http_client,
         }
     }

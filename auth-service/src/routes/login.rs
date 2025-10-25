@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub async fn login(
     State(state): State<AppState>,
-    jar:CookieJar,
+    jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let email = match Email::parse(request.email.clone()) {
@@ -31,7 +31,9 @@ pub async fn login(
     match user_store.validate_user(&email, &password).await {
         Ok(()) => {}
         Err(UserStoreError::UserNotFound) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
-        Err(UserStoreError::InvalidCredentials) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+        Err(UserStoreError::InvalidCredentials) => {
+            return (jar, Err(AuthAPIError::IncorrectCredentials))
+        }
         _ => return (jar, Err(AuthAPIError::UnexpectedError)),
     }
 
