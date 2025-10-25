@@ -1,7 +1,7 @@
 use auth_service::{
     app_state::AppState, domain::UserStore, services::HashMapUserStore, Application,
 };
-use reqwest::cookie::Jar;
+use reqwest::cookie::{Cookie, Jar};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -32,8 +32,11 @@ impl TestApp {
         let _ = tokio::spawn(app.run());
 
         let cookie_jar = Arc::new(Jar::default());
-        // Create a reqwest http client instance
-        let http_client = reqwest::Client::new();
+        // Create a reqwest client backed by the shared cookie jar so tests can set cookies
+        let http_client = reqwest::Client::builder()
+            .cookie_provider(cookie_jar.clone())
+            .build()
+            .expect("Failed to build http client");
 
         // Create a new TestApp instance and return it
         Self {
