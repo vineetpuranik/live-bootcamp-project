@@ -1,5 +1,6 @@
 use auth_service::{
-    app_state::AppState, domain::UserStore, services::HashMapUserStore, Application,
+    app_state::AppState, domain::UserStore, services::HashMapUserStore, utils::constants::test,
+    Application,
 };
 use reqwest::cookie::{Cookie, Jar};
 use std::collections::HashMap;
@@ -19,7 +20,7 @@ impl TestApp {
             users: HashMap::new(),
         });
         let app_state = AppState::new(Arc::new(RwLock::new(user_store)));
-        let app = Application::build(app_state, "127.0.0.1:0")
+        let app = Application::build(app_state, test::APP_ADDRESS)
             .await
             .expect("Failed to build the app");
 
