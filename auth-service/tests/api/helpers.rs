@@ -1,9 +1,10 @@
+use auth_service::app_state::BannedTokenStoreType;
+use auth_service::services::HashsetBannedTokenStore;
 use auth_service::{
     app_state::AppState, domain::UserStore, services::HashMapUserStore, utils::constants::test,
     Application,
 };
 use reqwest::cookie::Jar;
-use reqwest::Body;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -12,6 +13,7 @@ use uuid::Uuid;
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
+    pub banned_token_store: BannedTokenStoreType,
     pub http_client: reqwest::Client,
 }
 
@@ -20,7 +22,14 @@ impl TestApp {
         let user_store: Box<dyn UserStore + Send + Sync> = Box::new(HashMapUserStore {
             users: HashMap::new(),
         });
-        let app_state = AppState::new(Arc::new(RwLock::new(user_store)));
+
+        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+
+        let app_state = AppState::new(
+            Arc::new(RwLock::new(user_store)),
+            banned_token_store.clone(),
+        );
+
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
             .expect("Failed to build the app");
@@ -44,6 +53,7 @@ impl TestApp {
         Self {
             address,
             cookie_jar,
+            banned_token_store: banned_token_store,
             http_client,
         }
     }
