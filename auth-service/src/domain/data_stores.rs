@@ -9,9 +9,9 @@ pub trait UserStore: Send + Sync {
 }
 
 #[async_trait::async_trait]
-pub trait BannedTokenStore {
-    async fn store_token(&mut self, token:String) -> Result<(), BannedTokenStoreError>;
-    async fn check_token(&self, token:&str) -> Result<bool, BannedTokenStoreError>;
+pub trait BannedTokenStore: Send + Sync {
+    async fn store_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn check_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
 
 #[derive(Debug, PartialEq)]
