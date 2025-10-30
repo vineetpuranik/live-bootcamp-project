@@ -10,7 +10,6 @@ impl EmailClient for MockEmailClient {
         subject: &str,
         content: &str,
     ) -> Result<(), String> {
-        
         // For now our mock email client will be simply logging the recipient, subject and content to standard output
         println!(
             "Sending email to {} with subject {} and content {}",
