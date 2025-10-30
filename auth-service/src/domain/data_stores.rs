@@ -1,5 +1,3 @@
-use std::result;
-
 use rand::Rng;
 use uuid::Uuid;
 
