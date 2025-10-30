@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct HashMapTwoFACodeStore {
-    codes: HashMap<Email, (LoginAttemptId, TwoFACode)>,
+    pub codes: HashMap<Email, (LoginAttemptId, TwoFACode)>,
 }
 
 #[async_trait::async_trait]
