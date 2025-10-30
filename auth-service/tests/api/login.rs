@@ -1,5 +1,7 @@
 use crate::helpers::{get_random_email, TestApp};
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::{
+    domain::Email, routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME, ErrorResponse,
+};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
@@ -150,4 +152,47 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+}
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+    let random_email = get_random_email();
+
+    // Create a valid sign up request with 2fa enabled
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "longpasswordforme",
+        "requires2FA": true,
+    });
+
+    // call post sign-up and make sure we get 201 indicating sign up request was processed successfully
+    let response = app.post_signup(&signup_body).await;
+    assert_eq!(response.status().as_u16(), 201);
+
+    // call login with the new user and make sure 206 is returned since 2FA is enabled for the user
+    let login_body = serde_json::json!({
+        "email": random_email,
+        "password": "longpasswordforme",
+    });
+
+    let response = app.post_login(&login_body).await;
+    assert_eq!(response.status().as_u16(), 206);
+
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    let email = Email::parse(random_email.clone()).expect("Failed to parse email");
+    let login_attempt_id = json_body.login_attempt_id.clone();
+    let store = app.two_fa_code_store.read().await;
+    let (stored_login_attempt_id, _) = store
+        .get_code(&email)
+        .await
+        .expect("Expected login attempt id to be stored for 2FA");
+
+    assert_eq!(stored_login_attempt_id.as_ref(), login_attempt_id.as_str());
 }

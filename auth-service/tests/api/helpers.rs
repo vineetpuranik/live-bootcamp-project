@@ -1,5 +1,5 @@
-use auth_service::app_state::BannedTokenStoreType;
-use auth_service::services::HashsetBannedTokenStore;
+use auth_service::app_state::{BannedTokenStoreType, TwoFACodeStoreType};
+use auth_service::services::{HashMapTwoFACodeStore, HashsetBannedTokenStore};
 use auth_service::{
     app_state::AppState, domain::UserStore, services::HashMapUserStore, utils::constants::test,
     Application,
@@ -14,6 +14,7 @@ pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub banned_token_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType, // New!
     pub http_client: reqwest::Client,
 }
 
@@ -24,10 +25,12 @@ impl TestApp {
         });
 
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
 
         let app_state = AppState::new(
             Arc::new(RwLock::new(user_store)),
             banned_token_store.clone(),
+            two_fa_code_store.clone(),
         );
 
         let app = Application::build(app_state, test::APP_ADDRESS)
@@ -54,6 +57,7 @@ impl TestApp {
             address,
             cookie_jar,
             banned_token_store: banned_token_store,
+            two_fa_code_store: two_fa_code_store,
             http_client,
         }
     }
