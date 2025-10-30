@@ -151,3 +151,31 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
     assert!(!auth_cookie.value().is_empty());
 }
+
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+    let random_email = get_random_email();
+
+    // Create a valid sign up request with 2fa enabled
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "longpasswordforme",
+        "requires2FA": true,
+    });
+
+    // call post sign-up and make sure we get 201 indicating sign up request was processed successfully
+    let response = app.post_signup(&signup_body).await;
+    assert_eq!(response.status().as_u16(), 201);
+
+    // call login with the new user and make sure 206 is returned since 2FA is enabled for the user
+    let login_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+    });
+    
+    let response = app.post_login(&login_body).await;
+    assert_eq!(response.status().as_u16(), 206);
+
+}
