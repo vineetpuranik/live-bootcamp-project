@@ -1,3 +1,5 @@
+use std::os::linux::raw::stat;
+
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, LoginAttemptId, Password, TwoFACode, UserStoreError},
@@ -90,12 +92,22 @@ async fn handle_2fa(
         .two_fa_code_store
         .write()
         .await
-        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code)
+        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
         .await
         .is_err()
     {
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
+
+    // TODO: send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
+    let email_client = state.email_client.read().await;
+    match email_client
+        .send_email(email, "2FA Code", two_fa_code.as_ref())
+        .await
+    {
+        Ok(()) => {}
+        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+    };
 
     // Return a TwoFactorAuthResponse. The message should be "2FA required".
     let two_factor_auth_response = TwoFactorAuthResponse {

@@ -1,4 +1,4 @@
-use auth_service::services::{HashMapTwoFACodeStore, HashsetBannedTokenStore};
+use auth_service::services::{HashMapTwoFACodeStore, HashsetBannedTokenStore, MockEmailClient};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -21,11 +21,19 @@ async fn main() {
         codes: HashMap::new(),
     };
 
+    let email_client = MockEmailClient;
+
     let user_store = Arc::new(RwLock::new(user_store));
     let banned_token_store = Arc::new(RwLock::new(banned_token_store));
     let two_fa_code_store = Arc::new(RwLock::new(two_fa_code_store));
+    let email_client = Arc::new(RwLock::new(email_client));
 
-    let app_state = AppState::new(user_store, banned_token_store, two_fa_code_store);
+    let app_state = AppState::new(
+        user_store,
+        banned_token_store,
+        two_fa_code_store,
+        email_client,
+    );
 
     let app = Application::build(app_state, prod::APP_ADDRESS)
         .await
