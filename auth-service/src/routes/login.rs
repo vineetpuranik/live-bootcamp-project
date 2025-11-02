@@ -1,5 +1,3 @@
-use std::os::linux::raw::stat;
-
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, LoginAttemptId, Password, TwoFACode, UserStoreError},
@@ -22,9 +20,6 @@ pub async fn login(
         Ok(p) => p,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
-
-    println!("Email is {:?}", email);
-    println!("Password is {:?}", password);
 
     // we need read access to state
     // get exclusive write access to user store and add new_user to user store
