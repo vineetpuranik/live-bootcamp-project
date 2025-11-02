@@ -1,4 +1,7 @@
-#<img src="./app-service/assets/icon.svg" alt="Rustgate Logo" width="100"/>
+
+<div align="center">
+  <img src="./app-service/assets/Rustgate.png" alt="Rustgate Logo" width="150"/>
+</div>
 
 # Rustgate
 
