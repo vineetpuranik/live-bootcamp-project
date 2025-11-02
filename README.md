@@ -1,6 +1,6 @@
-#<img src="./app-service/assets/icon.svg" alt="Project Icon" width="100"/>
+#<img src="./app-service/assets/icon.svg" alt="Rustgate Logo" width="100"/>
 
-# Scalable Authentication and Application Services in Rust
+# Rustgate
 
 This repository provides a robust foundation for building scalable microservices in Rust. It features a decoupled authentication service and a user-facing application service, built with a modern technology stack that includes Axum, Tokio, and a curated set of high-quality crates. The project demonstrates best practices in web application development, including domain-driven design, containerization, and comprehensive testing.
 
