@@ -21,11 +21,11 @@ impl UserStore for HashMapUserStore {
         Ok(())
     }
 
-    async fn get_user(&self, email: &Email) -> Result<&User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         // This function should return a `Result` type containing either a
         // `User` object or a `UserStoreError::UserNotFound`.
         if let Some(user) = self.users.get(email) {
-            Ok(user)
+            Ok(user.clone())
         } else {
             Err(UserStoreError::UserNotFound)
         }
@@ -106,7 +106,7 @@ mod tests {
         // assert that we are able to return the newly added user by calling get_user
         assert_eq!(
             user_store_map.get_user(&user_to_add.email).await,
-            Ok(&user_to_add)
+            Ok(user_to_add)
         );
     }
 

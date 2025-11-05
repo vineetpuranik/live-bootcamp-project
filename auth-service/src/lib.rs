@@ -7,7 +7,7 @@ use axum::{
 };
 use domain::AuthAPIError;
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 

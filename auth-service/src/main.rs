@@ -7,16 +7,17 @@ use tokio::sync::RwLock;
 
 use auth_service::app_state::AppState;
 use auth_service::domain::UserStore;
-use auth_service::{services::HashMapUserStore, utils::constants::prod, Application};
 use auth_service::get_postgres_pool;
+use auth_service::{
+    services::postgres_user_store::PostgresUserStore, utils::constants::prod, Application,
+};
 
 #[tokio::main]
 async fn main() {
     let pg_pool = configure_postgresql().await;
 
-    let user_store: Box<dyn UserStore + Send + Sync> = Box::new(HashMapUserStore {
-        users: HashMap::new(),
-    });
+    let user_store: Box<dyn UserStore + Send + Sync> =
+        Box::new(PostgresUserStore { pool: pg_pool });
 
     let banned_token_store = HashsetBannedTokenStore {
         banned_tokens: HashSet::new(),
@@ -53,7 +54,7 @@ async fn configure_postgresql() -> PgPool {
         .await
         .expect("Failed to create Postgres connection pool!");
 
-    // Run database migrations against our test database! 
+    // Run database migrations against our test database!
     sqlx::migrate!()
         .run(&pg_pool)
         .await

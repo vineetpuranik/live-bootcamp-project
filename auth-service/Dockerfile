@@ -1,5 +1,5 @@
 # Start with image that has the Rust toolchain installed
-FROM rust:1.85-alpine AS chef
+FROM rust:1.88-alpine AS chef
 USER root
 # Add cargo-chef to cache dependencies
 RUN apk add --no-cache musl-dev & cargo install cargo-chef
@@ -16,6 +16,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
+ENV SQLX_OFFLINE true
 RUN cargo build --release --bin auth-service
 
 # We do not need the Rust toolchain to run the binary!
