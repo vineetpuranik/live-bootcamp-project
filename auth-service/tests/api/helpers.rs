@@ -81,7 +81,7 @@ impl TestApp {
 
     pub async fn clean_up(&mut self) {
         if self.clean_up_called {
-            return ;
+            return;
         }
 
         delete_database(&self.db_name).await;
@@ -157,16 +157,16 @@ impl TestApp {
 // Enforce clean_up is called by defining a custom destructor
 // This checks if clean_up is called and it not it panics
 // This is achieved by implementing the Drop trait for TestApp
-// We cannot call clean_up directly in the implementation of the drop fn. 
+// We cannot call clean_up directly in the implementation of the drop fn.
 // This is because clean_up is an async fn and async destructors are not currently supported in Rust.
 // https://rust-lang.github.io/async-fundamentals-initiative/roadmap/async_drop.html
 impl Drop for TestApp {
     fn drop(&mut self) {
         if !self.clean_up_called {
-            panic!("TestApp::clean_up was not called before dropping TestApp");    
+            panic!("TestApp::clean_up was not called before dropping TestApp");
         }
     }
-}    
+}
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
 }
