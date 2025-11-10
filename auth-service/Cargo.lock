@@ -93,6 +93,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "test_helpers",
  "tokio",
  "tower-http",
  "uuid",
@@ -2204,6 +2205,15 @@ checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "test_helpers"
+version = "0.1.0"
+source = "git+https://github.com/vineetpuranik/test_helpers.git#3f16975c5c1e1447b007d453a6961977bc148e02"
+dependencies = [
+ "quote",
+ "syn 2.0.108",
 ]
 
 [[package]]
