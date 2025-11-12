@@ -5,7 +5,7 @@
 
 # Rustgate
 
-This repository provides a robust foundation for building scalable microservices in Rust. It features a decoupled authentication service and a user-facing application service, built with a modern technology stack that includes Axum, Tokio, SQLx, and a curated set of high-quality crates. User credentials are stored securely in PostgreSQL with Argon2 hashing. The project demonstrates best practices in web application development, including domain-driven design, containerization, and comprehensive testing.
+This repository provides a robust foundation for building scalable microservices in Rust. It features a decoupled authentication service and a user-facing application service, built with a modern technology stack that includes Axum, Tokio, SQLx, and a curated set of high-quality crates. User credentials are stored securely in PostgreSQL with Argon2 hashing, while Redis powers fast in-memory stores for banned tokens and 2FA codes. The project demonstrates best practices in web application development, including domain-driven design, containerization, and comprehensive testing.
 
 ## Table of Contents
 
@@ -39,11 +39,13 @@ graph TD
 
     subgraph "Persistence"
         D[(PostgreSQL)]
+        E[(Redis)]
     end
 
     A -- HTTP Requests --> B
     B -- API Calls --> C
     C -- SQL Queries --> D
+    C -- Token/2FA Cache --> E
 ```
 
 ## Core Dependencies
@@ -67,6 +69,7 @@ This project leverages a curated set of high-quality crates to ensure robustness
 - **`validator`**: A library for data validation, ensuring the integrity of incoming requests.
 - **`uuid`**: For generating and managing unique identifiers for users and other resources.
 - **`sqlx`**: Async, compile-time checked Postgres access used by the production user store.
+- **`redis`**: Provides async access to Redis so the auth service can persist banned tokens and issued 2FA codes with TTLs.
 - **`async-trait`**: Enables the use of `async fn` in traits, simplifying asynchronous code.
 - **`chrono`**: A comprehensive library for handling dates and times.
 - **`lazy_static`**: Allows for the declaration of lazily initialized static variables.
@@ -96,6 +99,10 @@ The `app-service` and `auth-service` communicate with each other via REST APIs. 
 
 The authentication service persists users in PostgreSQL through `sqlx`, using a pooled connection (`PgPool`) so concurrent requests can reuse database connections efficiently. Schema changes live under `auth-service/migrations` and are applied automatically on startup via `sqlx::migrate!`, which keeps the runtime in sync with the migration history. Passwords are encoded with Argon2id before being written to the `users` table, and verification work is pushed onto Tokio's blocking thread pool to avoid stalling async request handlers.
 
+### Ephemeral Stores: Redis
+
+Redis sits alongside PostgreSQL to hold short-lived authentication data. The `RedisBannedTokenStore` tracks revoked JWTs for the duration of their TTL so logout flows take effect immediately, while `RedisTwoFACodeStore` keeps pending 2FA codes keyed by email for 10 minutes. Both stores share a single Redis connection (configurable through `REDIS_HOST_NAME`) and rely on Redis expirations to clean up state automatically.
+
 ### Service Initialization
 
 Both the `app-service` and `auth-service` are initialized in their respective `main.rs` files. This is where the Axum router is created and configured, and where the various components of the service are wired together.
@@ -112,7 +119,7 @@ In the `auth-service`, the `main.rs` file is responsible for:
 -   Creating the Axum router.
 -   Adding middleware for CORS and error handling.
 -   Defining the routes for the authentication API.
--   Establishing the PostgreSQL connection pool (and running pending migrations) alongside the in-memory stores for banned tokens and 2FA codes.
+-   Establishing the PostgreSQL connection pool (and running pending migrations) plus connecting to Redis for the banned-token and 2FA stores (using `REDIS_HOST_NAME` to pick the host).
 -   Starting the Axum server.
 
 ## Development Environment Setup
@@ -133,18 +140,21 @@ To get started with this project, you will need to have the Rust toolchain and `
     JWT_SECRET=super-secret-value
     DATABASE_URL=postgres://postgres:<password>@localhost:5432
     POSTGRES_PASSWORD=<password>
+    REDIS_HOST_NAME=127.0.0.1
     SQLX_OFFLINE=true
     ```
 
-    Adjust the credentials to match your local setup. `SQLX_OFFLINE=true` lets `sqlx::migrate!` compile without a live database during builds.
+    Adjust the credentials to match your local setup. `SQLX_OFFLINE=true` lets `sqlx::migrate!` compile without a live database during builds. `REDIS_HOST_NAME` defaults to `127.0.0.1`, but you can point it at any reachable Redis host (e.g., `redis` when running entirely inside Docker).
 
-4.  **Start PostgreSQL:** The quickest option during development is the bundled Docker Compose service:
+4.  **Start PostgreSQL and Redis:** The quickest option during development is the bundled Docker Compose services:
 
     ```bash
-    docker compose up -d db
+    docker compose up -d db redis
     ```
 
     You can also point `DATABASE_URL` at any existing PostgreSQL instance if you prefer a local install.
+
+    Redis must be reachable at the hostname defined by `REDIS_HOST_NAME`. For local development outside Docker, the default `127.0.0.1` works with a locally running Redis server.
 
     > Tip: To create new migrations or run them manually, install the SQLx CLI with
     > `cargo install sqlx-cli --no-default-features --features postgres,rustls`.
@@ -165,7 +175,7 @@ To get started with this project, you will need to have the Rust toolchain and `
 
 ### Manual Execution
 
-For development, you can run the services manually using `cargo-watch`. This will automatically restart the services whenever you make changes to the code. Ensure the PostgreSQL instance from the setup steps is running; the auth service will apply pending migrations on startup using the `DATABASE_URL` from your `.env` file.
+For development, you can run the services manually using `cargo-watch`. This will automatically restart the services whenever you make changes to the code. Ensure both PostgreSQL and Redis from the setup steps are running; the auth service will apply pending migrations on startup using `DATABASE_URL` and will connect to Redis using `REDIS_HOST_NAME`.
 
 #### Application Service
 
@@ -202,7 +212,8 @@ For a more production-like environment, you can use Docker to run the services. 
     ```env
     JWT_SECRET=your-secret
     POSTGRES_PASSWORD=<password>
-    DATABASE_URL=postgres://postgres:<password>@localhost:5432
+    DATABASE_URL=postgres://postgres:<password>@db:5432
+    REDIS_HOST_NAME=redis
     SQLX_OFFLINE=true
     ```
 
@@ -217,3 +228,4 @@ For a more production-like environment, you can use Docker to run the services. 
     - The application service will be available at `http://localhost:8000`.
     - The authentication service will be available at `http://localhost:3000`.
     - PostgreSQL will be available on `localhost:5432` (mapped from the `db` container).
+    - Redis will be available on `localhost:6379` (mapped from the `redis` container).
