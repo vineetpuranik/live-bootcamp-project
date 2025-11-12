@@ -23,6 +23,7 @@ rand = "0.8.5"
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "migrate"] }
 argon2 = { version = "0.5.3", features = ["std"] } # argon2 will be used to hash passwords
 test_helpers = { git = "https://github.com/vineetpuranik/test_helpers.git"}
+redis = { version = "0.25.2", features = ["tokio-comp"] } # Redis library for rust.
 
 [dev-dependencies]
 reqwest = {version = "0.11.26", default-features = false, features = ["json", "cookies"]}

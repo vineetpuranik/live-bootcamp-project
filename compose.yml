@@ -20,7 +20,8 @@ services:
       - "3000:3000" # expose port 3000 so that applications outside the container can connect to it 
     depends_on:
       - db      
-  # New!
+      
+  # Add postgresql
   db:
     image: postgres:15.2-alpine
     restart: always
@@ -29,7 +30,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db:/var/lib/postgresql/data      
+      - db:/var/lib/postgresql/data
+
+  # Add redis 
+  redis:
+    image: redis:7.0-alpine
+    restart: always
+    ports:
+      - "6379:6379"
 volumes:
   db:
-    driver: local      
+    driver: local 
