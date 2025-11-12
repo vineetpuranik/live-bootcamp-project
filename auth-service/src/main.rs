@@ -1,7 +1,6 @@
-use auth_service::services::{HashMapTwoFACodeStore, MockEmailClient};
+use auth_service::services::MockEmailClient;
 use auth_service::utils::DATABASE_URL;
 use sqlx::PgPool;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -11,6 +10,7 @@ use auth_service::{get_postgres_pool, get_redis_client};
 use auth_service::{
     services::{
         postgres_user_store::PostgresUserStore, redis_banned_token_store::RedisBannedTokenStore,
+        redis_two_fa_code_store::RedisTwoFACodeStore,
     },
     utils::constants::{prod, REDIS_HOST_NAME},
     Application,
@@ -29,10 +29,7 @@ async fn main() {
         redis_connection.clone(),
     )));
 
-    let two_fa_code_store = HashMapTwoFACodeStore {
-        codes: HashMap::new(),
-    };
-    let two_fa_code_store = Arc::new(RwLock::new(two_fa_code_store));
+    let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
 
     let email_client = Arc::new(RwLock::new(MockEmailClient));
 
