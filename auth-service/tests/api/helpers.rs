@@ -1,11 +1,10 @@
 use auth_service::app_state::{BannedTokenStoreType, EmailClientType, TwoFACodeStoreType};
-use auth_service::get_postgres_pool;
-use auth_service::services::{HashMapTwoFACodeStore, HashsetBannedTokenStore, MockEmailClient};
-use auth_service::utils::DATABASE_URL;
-use auth_service::{
-    app_state::AppState, domain::UserStore, services::HashMapUserStore, utils::constants::test,
-    Application,
-};
+use auth_service::services::postgres_user_store::PostgresUserStore;
+use auth_service::services::redis_banned_token_store::RedisBannedTokenStore;
+use auth_service::services::{HashMapTwoFACodeStore, MockEmailClient};
+use auth_service::utils::{DATABASE_URL, DEFAULT_REDIS_HOSTNAME};
+use auth_service::{app_state::AppState, domain::UserStore, utils::constants::test, Application};
+use auth_service::{get_postgres_pool, get_redis_client};
 
 use reqwest::cookie::Jar;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
@@ -32,16 +31,19 @@ impl TestApp {
         let db_name = Uuid::new_v4().to_string();
         let pg_pool = configure_postgresql(&db_name).await;
 
-        let user_store: Box<dyn UserStore + Send + Sync> = Box::new(HashMapUserStore {
-            users: HashMap::new(),
-        });
+        let redis_connection = Arc::new(RwLock::new(configure_redis()));
+        let user_store: Box<dyn UserStore + Send + Sync> =
+            Box::new(PostgresUserStore { pool: pg_pool });
+        let user_store = Arc::new(RwLock::new(user_store));
 
-        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
+            redis_connection.clone(),
+        )));
         let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient));
 
         let app_state = AppState::new(
-            Arc::new(RwLock::new(user_store)),
+            user_store.clone(),
             banned_token_store.clone(),
             two_fa_code_store.clone(),
             email_client.clone(),
@@ -246,4 +248,13 @@ async fn delete_database(db_name: &str) {
         .execute(format!(r#"DROP DATABASE "{}";"#, db_name).as_str())
         .await
         .expect("Failed to drop the database.");
+}
+
+fn configure_redis() -> redis::Connection {
+    let redis_hostname = DEFAULT_REDIS_HOSTNAME.to_owned();
+
+    get_redis_client(redis_hostname)
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }

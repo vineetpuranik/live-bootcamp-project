@@ -25,4 +25,6 @@ FROM debian:buster-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/auth-service /usr/local/bin
 COPY --from=builder /app/assets /app/assets
+# When we run our application in Docker, the hostname of Redis will be the name of the Redis service defined in compose.yml
+ENV REDIS_HOST_NAME=redis
 ENTRYPOINT ["/usr/local/bin/auth-service"]

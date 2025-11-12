@@ -122,33 +122,22 @@ async fn should_return_400_if_invalid_input() {
 
 #[api_test]
 async fn should_return_409_if_email_already_exists() {
-    // remove app creation as it is done in proc attribute macro
-    let test_email = get_random_email();
+    let random_email = get_random_email();
 
-    let test_case = serde_json::json!(
-    {
-        "email": test_email.clone(),
-        "password": "password@1234",
-        "requires2FA": true,
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": true
     });
 
-    // call the signup route twice with the same request body.
-    // the second request should fail with 409 HTTP status code
-    let response = app.post_signup(&test_case).await;
-    assert_eq!(
-        response.status().as_u16(),
-        201,
-        "Failed for input: {:?}",
-        test_case
-    );
+    let response = app.post_signup(&signup_body).await;
 
-    let response = app.post_signup(&test_case).await;
-    assert_eq!(
-        response.status().as_u16(),
-        409,
-        "Failed for input: {:?}",
-        test_case
-    );
+    assert_eq!(response.status().as_u16(), 201);
+
+    let response = app.post_signup(&signup_body).await;
+
+    assert_eq!(response.status().as_u16(), 409);
+
     assert_eq!(
         response
             .json::<ErrorResponse>()

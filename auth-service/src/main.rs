@@ -1,38 +1,40 @@
-use auth_service::services::{HashMapTwoFACodeStore, HashsetBannedTokenStore, MockEmailClient};
+use auth_service::services::{HashMapTwoFACodeStore, MockEmailClient};
 use auth_service::utils::DATABASE_URL;
 use sqlx::PgPool;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use auth_service::app_state::AppState;
 use auth_service::domain::UserStore;
-use auth_service::get_postgres_pool;
+use auth_service::{get_postgres_pool, get_redis_client};
 use auth_service::{
-    services::postgres_user_store::PostgresUserStore, utils::constants::prod, Application,
+    services::{
+        postgres_user_store::PostgresUserStore, redis_banned_token_store::RedisBannedTokenStore,
+    },
+    utils::constants::{prod, REDIS_HOST_NAME},
+    Application,
 };
 
 #[tokio::main]
 async fn main() {
     let pg_pool = configure_postgresql().await;
+    let redis_connection = Arc::new(RwLock::new(configure_redis()));
 
     let user_store: Box<dyn UserStore + Send + Sync> =
         Box::new(PostgresUserStore { pool: pg_pool });
+    let user_store = Arc::new(RwLock::new(user_store));
 
-    let banned_token_store = HashsetBannedTokenStore {
-        banned_tokens: HashSet::new(),
-    };
+    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
+        redis_connection.clone(),
+    )));
 
     let two_fa_code_store = HashMapTwoFACodeStore {
         codes: HashMap::new(),
     };
-
-    let email_client = MockEmailClient;
-
-    let user_store = Arc::new(RwLock::new(user_store));
-    let banned_token_store = Arc::new(RwLock::new(banned_token_store));
     let two_fa_code_store = Arc::new(RwLock::new(two_fa_code_store));
-    let email_client = Arc::new(RwLock::new(email_client));
+
+    let email_client = Arc::new(RwLock::new(MockEmailClient));
 
     let app_state = AppState::new(
         user_store,
@@ -61,4 +63,11 @@ async fn configure_postgresql() -> PgPool {
         .expect("Failed to run migrations");
 
     pg_pool
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }
